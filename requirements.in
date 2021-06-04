@@ -1,0 +1,4 @@
+#use pip-compile requirements.in
+#requests==2.5.1
+requests
+beautifulsoup4 == 4.9.3
