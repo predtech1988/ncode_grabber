@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import time
 import tkinter.simpledialog
 from tkinter import *  # I know bad practice
@@ -104,13 +105,21 @@ def clear_url():
     url_path_ent.delete(0, END)
 
 
+def save_settings(key, value):
+    """
+    Saving user input and settings  (File paths, file name, etc)
+    Data saves in dictionary as kye, value pair.
+    """
+    arguments[key] = value
+    return 0
+
+
 def browse_save_path():
     path = filedialog.askdirectory()
-    arguments["path"] = path
+    save_settings("path", path)
     save_path_ent.delete(0, END)
     save_path_ent.insert(0, path)
-    log = arguments["path"]
-    log_print(f"save path:{log}")
+    log_print(f"Save path: {path}" + "\n")
 
 
 def check_input():
@@ -120,12 +129,15 @@ def check_input():
     """
     # Cheking is user set the path to save file
     if "path" not in arguments.keys():
-        arguments["path"] = os.getcwd()
+        # Getting current directory
+        path = os.getcwd()
+        save_settings("path", path)
         save_path_ent.delete(0, END)
-        save_path_ent.insert(0, arguments["path"])
+        save_path_ent.insert(0, path)
+        log_print(f"Save path: {path}" + "\n")
 
     # Checking is user entered url leads to the ncode.syosetu.com
-    template = "https://ncode.syosetu.com"  # 25 symbols
+    template = "https://ncode.syosetu.com"  # 25 symbols also we can use re.match()
     url = url_path_ent.get()
     if url[0:25] != template:
         log_url = url[0:25]
@@ -136,33 +148,41 @@ def check_input():
         )
         return
     else:
-        log_print("url Ok")
-        arguments["url"] = url
+        log_print(url)
+        save_settings("url", url)
 
     # Cheking values of the start and the end chapters, must be positive number
     start_chapter = start_chapter_ent.get()
     end_chapter = end_chapter_ent.get()
 
+    # Also we can use RegExp
     if not (start_chapter.isnumeric() and int(start_chapter) >= 0) or not (
         end_chapter.isnumeric() and int(end_chapter) >= 0
     ):
         mb.showerror("Error!", "Value for 'Starting' or 'Ending' chapter's wrong, it must be integer, bigger or = 0")
         return
     else:
-        log_print("End and Start OK")
-        arguments["start"] = start_chapter
-        arguments["end"] = end_chapter
+        log_print(f"Start = {start_chapter} and End = {end_chapter}. OK \n")
+        save_settings("start", start_chapter)
+        save_settings("end", end_chapter)
 
     # Get file name. If empty name = current time in ms
     file_name = file_name_ent.get()
     if len(file_name) < 1:
-        arguments["file_name"] = str(time.time()).split(".")[0] + ".txt"
-        log_file_name = arguments["file_name"]
-        log_print(f"File name is: {log_file_name}")
-        file_name_ent.insert(0, log_file_name)
+        random_file_name = str(time.time()).split(".")[0] + ".txt"
+        save_settings("file_name", random_file_name)
+        log_print(f"File name is: {random_file_name}")
+        file_name_ent.insert(0, random_file_name)
+    else:
+        pattern = r"\.txt"
+        if re.search(pattern, file_name):
+            save_settings("file_name", file_name)
+        else:
+            file_name += ".txt"
+            save_settings("file_name", file_name)
 
     # Saving is_overwrite value in arguments dictionary
-    arguments["is_overwrite"] = is_overwrite.get()
+    save_settings("is_overwrite", is_overwrite.get())
 
 
 def start_button():
