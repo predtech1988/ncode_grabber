@@ -17,16 +17,17 @@ from bs4 import BeautifulSoup
 from requests import get
 
 arguments = dict()
-# url = "https://ya.ru"
-# resp = get(url, headers={"User-Agent": "Mozilla/5.0"})
-# print(resp.status_code)
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
+    "Accept-Language": "ja",
+    "Referer": "https://www.google.com/",
+}
 
 window = Tk()
 window.title("Ncode grabber")
 window.minsize(width=600, height=300)
 FONTS = ("Arial", 14)
 is_overwrite = BooleanVar()
-# start_btn_text = StringVar()
 
 
 # GUI start
@@ -84,6 +85,7 @@ text_area = scrolledtext.ScrolledText(window, wrap=WORD, width=75, height=8, fon
 text_area.grid(row=8, column=0, columnspan=4)
 window.grid_columnconfigure(0, weight=1, uniform="foo")
 
+
 # Program Logic
 def log_print(txt):
     """
@@ -96,6 +98,9 @@ def log_print(txt):
 
 
 def paste_url():
+    """
+    Pasting url from clipboard to entry field
+    """
     clipboard = window.clipboard_get()
     url_path_ent.delete(0, END)
     url_path_ent.insert(0, clipboard)
@@ -115,6 +120,9 @@ def save_settings(key, value):
 
 
 def browse_save_path():
+    """
+    Opens ask directory window, to set directory for saving the result txt file.
+    """
     path = filedialog.askdirectory()
     save_settings("path", path)
     save_path_ent.delete(0, END)
@@ -148,6 +156,8 @@ def check_input():
         )
         return
     else:
+        if url[-1] != "/":
+            url += "/"
         log_print(url)
         save_settings("url", url)
 
@@ -155,16 +165,23 @@ def check_input():
     start_chapter = start_chapter_ent.get()
     end_chapter = end_chapter_ent.get()
 
-    # Also we can use RegExp
+    # Also we can use RegExp to avoid using int() later.
     if not (start_chapter.isnumeric() and int(start_chapter) >= 0) or not (
         end_chapter.isnumeric() and int(end_chapter) >= 0
     ):
         mb.showerror("Error!", "Value for 'Starting' or 'Ending' chapter's wrong, it must be integer, bigger or = 0")
         return
     else:
-        log_print(f"Start = {start_chapter} and End = {end_chapter}. OK \n")
-        save_settings("start", start_chapter)
-        save_settings("end", end_chapter)
+        if int(start_chapter) > int(end_chapter):
+            log_print(f"Start chapter bigger then End chapter! Start = {start_chapter} and End = {end_chapter}.")
+            mb.showerror(
+                "Error!", f"Start chapter bigger then End chapter! Start = {start_chapter} and End = {end_chapter}."
+            )
+            return
+        else:
+            log_print(f"Start = {start_chapter} and End = {end_chapter}. OK")
+            save_settings("start", int(start_chapter))
+            save_settings("end", int(end_chapter))
 
     # Get file name. If empty name = current time in ms
     file_name = file_name_ent.get()
@@ -185,10 +202,50 @@ def check_input():
     save_settings("is_overwrite", is_overwrite.get())
 
 
+def save_page(text, chapter):
+    name = arguments["file_name"]
+    is_overwrite = arguments["is_overwrite"]
+    pass
+
+
+def grab_page(url, chapter):
+    try:
+        resp = get(url, headers=headers)
+    except:
+        log_print(f"Unknown Connection Error!")
+        return
+    if resp.status_code != 200:
+        log_print(f"Connection Error code: {resp.status_code}")
+        return
+    soup = BeautifulSoup(resp.text, "html.parser")
+    body = soup.find_all(id="novel_honbun")
+    # tmp = body[0].text
+
+
+def get_response():
+    url = arguments["url"]
+    start = arguments["start"]
+    end = arguments["end"]
+    try:
+        resp = get(url, headers=headers)
+    except:
+        log_print(f"Unknown Connection Error!")
+        return
+    else:
+        if resp.status_code == 200:
+            log_print(f"Connected, resp code = {resp.status_code}")
+            chapter = start
+            while chapter <= end:
+                grab_page(url + str(chapter), chapter)
+                chapter += 1
+        else:
+            log_print(f"Connection Error resp code = {resp.status_code}")
+            return
+
+
 def start_button():
-    # scan all fields
-    # if field is empty rise error window or add default values
     check_input()
+    get_response()
 
 
 def test():
