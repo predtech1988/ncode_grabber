@@ -124,6 +124,7 @@ def browse_save_path():
     Opens ask directory window, to set directory for saving the result txt file.
     """
     path = filedialog.askdirectory()
+    path = path.replace("/", "\\") + "\\"
     save_settings("path", path)
     save_path_ent.delete(0, END)
     save_path_ent.insert(0, path)
@@ -203,12 +204,18 @@ def check_input():
 
 
 def save_page(text, chapter):
-    name = arguments["file_name"]
-    is_overwrite = arguments["is_overwrite"]
-    pass
+    name = arguments["path"] + arguments["file_name"]  # Name+path
+    page_id = str(10_000 + chapter)  # Will be used in the next features
+    # is_overwrite = arguments["is_overwrite"]
+    with open(name, "a+", encoding="utf-8-sig") as file:
+        file.write("\n" + "Chapter: " + str(chapter) + "\n" + text + "\n" + f"[{page_id}]")
+        log_print(f"Chapter {chapter} saved!")
 
 
 def grab_page(url, chapter):
+    """
+    Parsing page at the given url.
+    """
     try:
         resp = get(url, headers=headers)
     except:
@@ -219,10 +226,14 @@ def grab_page(url, chapter):
         return
     soup = BeautifulSoup(resp.text, "html.parser")
     body = soup.find_all(id="novel_honbun")
-    # tmp = body[0].text
+    text_data = body[0].text
+    save_page(text_data, chapter)
 
 
 def get_response():
+    """
+    Cheking server aviability, if OK send to parsing function
+    """
     url = arguments["url"]
     start = arguments["start"]
     end = arguments["end"]
@@ -238,6 +249,7 @@ def get_response():
             while chapter <= end:
                 grab_page(url + str(chapter), chapter)
                 chapter += 1
+            log_print("Completed!")
         else:
             log_print(f"Connection Error resp code = {resp.status_code}")
             return
