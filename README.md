@@ -8,6 +8,8 @@ In the process of creating this project , I strengthened my knowledge in:
     Error handling, cheeking user input and logging.
     Touched to the threading on practice
 ![cover](https://user-images.githubusercontent.com/79061448/121884904-29dc1680-cd1c-11eb-8c17-c9f2430a9796.jpg)
+
+>Demo [video](https://youtu.be/EcELdOWJVZs)
 ## Installation
 *Nix
 
