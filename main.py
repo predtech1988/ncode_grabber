@@ -32,9 +32,9 @@ is_overwrite = BooleanVar()
 
 # GUI start
 # Canvas for logo
-canvas = Canvas(width=0, height=0)  # change later
+canvas = Canvas(width=300, height=263)
 bg_image = PhotoImage(file=".\\data\\background.png")
-canvas.create_image(0, 0, image=bg_image)  # change later
+canvas.create_image(150, 110, image=bg_image)
 canvas.grid(row=7, column=5, columnspan=3, sticky="n")
 
 # Labels _lb suffix
@@ -81,8 +81,8 @@ is_overwrite_ck = Checkbutton(variable=is_overwrite)  # Returns 0 or 1
 is_overwrite_ck.grid(row=6, column=1, sticky="w")
 
 # Text area for log
-text_area = scrolledtext.ScrolledText(window, wrap=WORD, width=75, height=8, font=("Times New Roman", 9))
-text_area.grid(row=8, column=0, columnspan=4)
+text_area = scrolledtext.ScrolledText(window, wrap=WORD, width=35, height=8, font=("Times New Roman", 9))
+text_area.grid(row=7, column=0, columnspan=2, sticky="w")
 window.grid_columnconfigure(0, weight=1, uniform="foo")
 
 
@@ -124,11 +124,13 @@ def browse_save_path():
     Opens ask directory window, to set directory for saving the result txt file.
     """
     path = filedialog.askdirectory()
+    if path == "":
+        path = os.getcwd()
     path = path.replace("/", "\\") + "\\"
     save_settings("path", path)
     save_path_ent.delete(0, END)
     save_path_ent.insert(0, path)
-    log_print(f"Save path: {path}" + "\n")
+    log_print(f"Save path: {path}")
 
 
 def check_input():
@@ -260,10 +262,6 @@ def start_button():
     get_response()
 
 
-def test():
-    pass
-
-
 # GUI Buttons
 # Buttons _btn suffix
 browse_btn = Button(text="Browse", command=browse_save_path)
@@ -276,9 +274,6 @@ browse_btn = Button(text="Clear", command=clear_url)
 browse_btn.grid(row=2, column=4)
 
 start_btn = Button(text="START", font=("Helvetica", 30), bg="#0052cc", fg="#ffffff", command=start_button)
-start_btn.grid(row=7, column=1)
-
-# Remove later test button
-browse_btn = Button(text="Test", command=test).grid(row=1, column=4)
+start_btn.grid(row=7, column=1, sticky="e")
 
 window.mainloop()
