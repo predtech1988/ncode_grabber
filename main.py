@@ -3,15 +3,16 @@
 
 import os
 import re
+import threading
 import time
-import tkinter.simpledialog
-from tkinter import *  # I know bad practice
+
+# from tkinter import *  # I know bad practice
+import tkinter as tk
 from tkinter import Button, filedialog
 from tkinter import messagebox as mb
 from tkinter import scrolledtext, ttk
 from tkinter.constants import END
 from tkinter.filedialog import askdirectory
-from tkinter.font import Font
 
 from bs4 import BeautifulSoup
 from requests import get
@@ -23,65 +24,65 @@ headers = {
     "Referer": "https://www.google.com/",
 }
 
-window = Tk()
+window = tk.Tk()
 window.title("Ncode grabber")
 window.minsize(width=600, height=300)
 FONTS = ("Arial", 14)
-is_overwrite = BooleanVar()
+is_overwrite = tk.BooleanVar()
 
 
 # GUI start
 # Canvas for logo
-canvas = Canvas(width=300, height=263)
-bg_image = PhotoImage(file=".\\data\\background.png")
+canvas = tk.Canvas(width=300, height=263)
+bg_image = tk.PhotoImage(file=".\\data\\background.png")
 canvas.create_image(150, 110, image=bg_image)
 canvas.grid(row=7, column=5, columnspan=3, sticky="n")
 
 # Labels _lb suffix
-title_lb = Label(text="Ncode Grabber", font=("Arial", 28, "bold"))
-title_lb.grid(row=0, column=1)
+title_lb = tk.Label(text="Ncode Grabber", font=("Arial", 28, "bold"))
+title_lb.grid(row=0, column=1, columnspan=4, sticky="e")
 
-save_path_lb = Label(text="Save path", font=FONTS)
+save_path_lb = tk.Label(text="Save path", font=FONTS)
 save_path_lb.grid(row=1, column=0, sticky="w")
 
-url_path_lb = Label(text="URL link", font=FONTS)
+url_path_lb = tk.Label(text="URL link", font=FONTS)
 url_path_lb.grid(row=2, column=0, sticky="w")
 
-start_chapter_lb = Label(text="Starting chapter", font=FONTS)
+start_chapter_lb = tk.Label(text="Starting chapter", font=FONTS)
 start_chapter_lb.grid(row=3, column=0, sticky="w")
 
-end_chapter_lb = Label(text="End chapter", font=FONTS)
+end_chapter_lb = tk.Label(text="End chapter", font=FONTS)
 end_chapter_lb.grid(row=4, column=0, sticky="w")
 
-file_name_lb = Label(text="File name", font=FONTS)
+file_name_lb = tk.Label(text="File name", font=FONTS)
 file_name_lb.grid(row=5, column=0, sticky="w")
 
-overwrite_lb = Label(text="Overwrite file?", font=FONTS)
+overwrite_lb = tk.Label(text="Overwrite file?", font=FONTS)
 overwrite_lb.config(fg="Red")
 overwrite_lb.grid(row=6, column=0, sticky="w")
 
 # Entry's  _ent suffix
-save_path_ent = Entry(width=50)
+save_path_ent = tk.Entry(width=50)
 save_path_ent.grid(row=1, column=1, sticky="w")
 
-url_path_ent = Entry(width=50)
+url_path_ent = tk.Entry(width=50)
 url_path_ent.grid(row=2, column=1, sticky="n")
 
-start_chapter_ent = Entry(width=10)
+start_chapter_ent = tk.Entry(width=10)
 start_chapter_ent.grid(row=3, column=1, sticky="w")
 
-end_chapter_ent = Entry(width=10)
+end_chapter_ent = tk.Entry(width=10)
 end_chapter_ent.grid(row=4, column=1, sticky="w")
 
-file_name_ent = Entry(width=30)
+file_name_ent = tk.Entry(width=30)
 file_name_ent.grid(row=5, column=1, sticky="w")
 
 # Check box _ck suffix
-is_overwrite_ck = Checkbutton(variable=is_overwrite)  # Returns 0 or 1
+is_overwrite_ck = tk.Checkbutton(variable=is_overwrite)  # Returns 0 or 1
 is_overwrite_ck.grid(row=6, column=1, sticky="w")
 
 # Text area for log
-text_area = scrolledtext.ScrolledText(window, wrap=WORD, width=35, height=8, font=("Times New Roman", 9))
+text_area = scrolledtext.ScrolledText(window, wrap=tk.WORD, width=35, height=8, font=("Times New Roman", 9))
 text_area.grid(row=7, column=0, columnspan=2, sticky="w")
 window.grid_columnconfigure(0, weight=1, uniform="foo")
 
@@ -92,7 +93,7 @@ def log_print(txt):
     Logs all, and show's in log window
     """
     text_area.configure(state="normal")
-    text_area.insert(INSERT, str(txt) + "\n")
+    text_area.insert(tk.INSERT, str(txt) + "\n")
     text_area.see(END)
     text_area.configure(state="disabled")
 
@@ -142,13 +143,14 @@ def check_input():
     if "path" not in arguments.keys():
         # Getting current directory
         path = os.getcwd()
+        path = path.replace("/", "\\") + "\\"
         save_settings("path", path)
         save_path_ent.delete(0, END)
         save_path_ent.insert(0, path)
         log_print(f"Save path: {path}" + "\n")
 
     # Checking is user entered url leads to the ncode.syosetu.com
-    template = "https://ncode.syosetu.com"  # 25 symbols also we can use re.match()
+    template = "https://ncode.syosetu.com"  # 25 symbols. Also we can use re.match()
     url = url_path_ent.get()
     if url[0:25] != template:
         log_url = url[0:25]
@@ -157,7 +159,7 @@ def check_input():
             "Wrong URL!",
             "Something wrong with url link, please check it. Example: https://ncode.syosetu.com/n7975cr/",
         )
-        return
+        return 1  # Some error
     else:
         if url[-1] != "/":
             url += "/"
@@ -173,14 +175,14 @@ def check_input():
         end_chapter.isnumeric() and int(end_chapter) >= 0
     ):
         mb.showerror("Error!", "Value for 'Starting' or 'Ending' chapter's wrong, it must be integer, bigger or = 0")
-        return
+        return 1  # Some error
     else:
         if int(start_chapter) > int(end_chapter):
             log_print(f"Start chapter bigger then End chapter! Start = {start_chapter} and End = {end_chapter}.")
             mb.showerror(
                 "Error!", f"Start chapter bigger then End chapter! Start = {start_chapter} and End = {end_chapter}."
             )
-            return
+            return 1  # Some error
         else:
             log_print(f"Start = {start_chapter} and End = {end_chapter}. OK")
             save_settings("start", int(start_chapter))
@@ -203,6 +205,7 @@ def check_input():
 
     # Saving is_overwrite value in arguments dictionary
     save_settings("is_overwrite", is_overwrite.get())
+    return 0  # OK
 
 
 def save_page(text, chapter):
@@ -258,8 +261,17 @@ def get_response():
 
 
 def start_button():
-    check_input()
-    get_response()
+    flag = check_input()
+    if flag != 1:
+        get_response()
+    else:
+        log_print("Some errors occurred! Please check your input.")
+
+
+def start_threading():
+
+    thread_1 = threading.Thread(target=start_button)
+    thread_1.start()
 
 
 # GUI Buttons
@@ -273,7 +285,13 @@ browse_btn.grid(row=2, column=3)
 browse_btn = Button(text="Clear", command=clear_url)
 browse_btn.grid(row=2, column=4)
 
-start_btn = Button(text="START", font=("Helvetica", 30), bg="#0052cc", fg="#ffffff", command=start_button)
+start_btn = Button(
+    text="START",
+    font=("Helvetica", 30),
+    bg="#0052cc",
+    fg="#ffffff",
+    command=start_threading,
+)
 start_btn.grid(row=7, column=1, sticky="e")
 
 window.mainloop()
